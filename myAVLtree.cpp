@@ -14,28 +14,38 @@ myAVLtree.cpp
 #include <stdexcept>
 #include <cmath>
 
-using namespace std;
+void treeMedian(const std::vector<int>* instructions) {
+    if (!instructions) {
+        std::cerr << "Error: Null pointer passed to treeMedian." << std::endl;
+        return;
+    }
 
-void treeMedian(const vector<int>* instructions) {
-    AvlTree<int> tree;
-    vector<int> medians;
+    AvlTree<int> tree; // Assuming AvlTree is a template class that requires a type
+
+    std::vector<int> medians; // Vector to hold medians
 
     for (int instruction : *instructions) {
-        if (instruction == -1) { // Pop median operation
+        if (instruction == -1) {
+            // Attempt to pop median from the AVL tree
+            if (tree.isEmpty()) {
+                std::cerr << "Error: No elements to find median." << std::endl;
+                continue;
+            }
             try {
-                int median = tree.popMedian();
+                int median = tree.popMedian(); // Correctly use popMedian here
                 medians.push_back(median);
             } catch (const UnderflowException& e) {
-                cout << "Attempted to pop median from an empty tree." << endl;
+                std::cerr << e.what() << std::endl;
             }
-        } else { // Insert operation
-            tree.insert(instruction);
+        } else {
+            // Insert instruction value into the AVL tree
+            tree.insert(instruction); // Insert directly without accessing root
         }
     }
 
-    // Output all medians at once to minimize I/O operations.
+    // Print medians
     for (int median : medians) {
-        cout << median << " ";
+        std::cout << median << " ";
     }
-    cout << endl;
+    std::cout << std::endl;
 }
