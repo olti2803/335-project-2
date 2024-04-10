@@ -16,18 +16,26 @@ myAVLtree.cpp
 
 using namespace std;
 
-void treeMedian(const std::vector<int>& instructions) {
+void treeMedian(const vector<int>* instructions) {
     AvlTree<int> tree;
-    for (int instruction : instructions) {
+    vector<int> medians;
+
+    for (int instruction : *instructions) {
         if (instruction == -1) { // Pop median operation
             try {
-                std::cout << tree.popMedian() << " ";
+                int median = tree.popMedian();
+                medians.push_back(median);
             } catch (const UnderflowException& e) {
-                std::cout << "Attempted to pop from an empty tree." << std::endl;
+                cout << "Attempted to pop median from an empty tree." << endl;
             }
         } else { // Insert operation
             tree.insert(instruction);
         }
     }
-    std::cout << std::endl; // Ensure the output ends with a new line
+
+    // Output all medians at once to minimize I/O operations.
+    for (int median : medians) {
+        cout << median << " ";
+    }
+    cout << endl;
 }
