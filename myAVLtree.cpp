@@ -156,6 +156,9 @@ int AVLTree::getMedian() {
 }
 
 int AVLTree::popMedian() {
+    if (root == nullptr) {
+        throw std::out_of_range("Cannot pop median from an empty tree");
+    }
     int median = getMedian();
     root = deleteNode(root, median);
     return median;
@@ -234,8 +237,12 @@ void treeMedian(const std::vector<int>* instructions) {
     std::vector<int> medians;
 
     for (int instruction : *instructions) {
-        if (instruction == -1) {
-            medians.push_back(tree.popMedian());
+        if (instruction == -1) { 
+            try {
+                medians.push_back(tree.popMedian());
+            } catch (const std::out_of_range& e) {
+                std::cerr << e.what() << '\n';
+            }
         } else {
             tree.insertValue(instruction);
         }
