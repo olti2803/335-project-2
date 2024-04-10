@@ -152,6 +152,10 @@ int AVLTree::getMedian() {
     inOrder(root, values);
     size_t size = values.size();
 
+    if (size == 0) {
+        throw std::out_of_range("Cannot get median from an empty tree");
+    }
+
     if (size % 2 != 0)
         return values[size / 2];
     else
