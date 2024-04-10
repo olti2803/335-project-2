@@ -39,6 +39,7 @@ public:
     Node* minValueNode(Node* node);
     Node* maxValueNode(Node* node);
 
+    bool isEmpty() const;
     void insertValue(int value) {
         root = insert(root, value);
     }

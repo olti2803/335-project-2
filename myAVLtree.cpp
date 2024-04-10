@@ -238,6 +238,9 @@ Node* AVLTree::maxValueNode(Node* node) {
 void AVLTree::insertValue(int value) {
     root = insert(root, value);
 }
+bool AVLTree::isEmpty() const {
+    return root == nullptr;
+}
 
 void treeMedian(const std::vector<int>* instructions) {
     AVLTree tree;
@@ -245,11 +248,8 @@ void treeMedian(const std::vector<int>* instructions) {
 
     for (int instruction : *instructions) {
         if (instruction == -1) { 
-            try {
+            if (!tree.isEmpty()) { // Check if the tree is not empty
                 medians.push_back(tree.popMedian());
-            } catch (const std::out_of_range& e) {
-                // Handle the exception (e.g., by continuing to the next instruction)
-                continue;
             }
         } else {
             tree.insertValue(instruction);
