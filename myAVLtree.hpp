@@ -37,7 +37,7 @@ public:
     // Function to pop and return the median value from the AVL tree
     int popMedian();
 
-    static void treeMedian(const std::vector<int>& instructions); // Declaration for treeMedian, the main function we are testing for
+    static void treeMedian(const std::vector<int>* instructions); // Declaration for treeMedian, the main function we are testing for
 
 
 private:

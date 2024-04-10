@@ -218,12 +218,17 @@ int AVLTree::getMedianValueAndRebalance() {
 
 
 //function we are testing for
-void AVLTree::treeMedian(const std::vector<int>& instructions) {
+void AVLTree::treeMedian(const std::vector<int>* instructions) {
+    if (instructions == nullptr) {
+        std::cerr << "Error: Null pointer to instructions vector." << std::endl;
+        return;
+    }
+
     AVLTree avl; // Instantiate your AVL tree
     std::vector<int> medians; // To store and later print all popped medians
 
     try {
-        for (int inst : instructions) {
+        for (int inst : *instructions) {
             if (inst == -1) {
                 // Pop median instruction
                 int median = avl.popMedian(); // Assuming this method exists and returns the median
@@ -243,6 +248,7 @@ void AVLTree::treeMedian(const std::vector<int>& instructions) {
         std::cerr << "Error occurred: " << e.what() << std::endl;
     }
 }
+
 
 
 // util function to update the height and size of a node
