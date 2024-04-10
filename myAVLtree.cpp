@@ -145,6 +145,9 @@ void inOrder(Node* node, std::vector<int>& values) {
 }
 
 int AVLTree::getMedian() {
+    if (root == nullptr) {
+        throw std::out_of_range("Cannot get median from an empty tree");
+    }
     std::vector<int> values;
     inOrder(root, values);
     size_t size = values.size();
