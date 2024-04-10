@@ -241,7 +241,12 @@ void treeMedian(const std::vector<int>* instructions) {
 
     for (int instruction : *instructions) {
         if (instruction == -1) { 
-            medians.push_back(tree.popMedian());
+            try {
+                medians.push_back(tree.popMedian());
+            } catch (const std::out_of_range& e) {
+                // Handle the exception (e.g., by continuing to the next instruction)
+                continue;
+            }
         } else {
             tree.insertValue(instruction);
         }
