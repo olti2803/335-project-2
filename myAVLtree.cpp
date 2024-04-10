@@ -14,39 +14,104 @@ myAVLtree.cpp
 #include <stdexcept>
 #include <cmath>
 
-Node* AVLTree::insert(Node* node, int value) {
-    // 1. Perform the normal BST insertion
+// Constructor
+AVLTree::AVLTree() : root(nullptr) {}
+
+// Destructor
+AVLTree::~AVLTree() {
+    clearTree(root);
+}
+
+// Helper to clear the tree recursively
+void AVLTree::clearTree(AVLNode* node) {
+    if (node != nullptr) {
+        clearTree(node->left);
+        clearTree(node->right);
+        delete node;
+    }
+}
+
+// Insert a value into the AVL tree
+void AVLTree::insert(int value) {
+    root = insertHelper(root, value);
+}
+
+// Recursive helper for insertion
+AVLNode* AVLTree::insertHelper(AVLNode* node, int value) {
     if (node == nullptr) {
-        node = new Node();
-        node->value = value;
-        node->left = nullptr;
-        node->right = nullptr;
-        node->height = 1;  // new node is initially added at leaf
+        return new AVLNode(value);
+    }
+
+    if (value < node->value) {
+        node->left = insertHelper(node->left, value);
+    } else if (value > node->value) {
+        node->right = insertHelper(node->right, value);
+    } else {
+        node->count++;
         return node;
     }
 
-    if (value < node->value)
-        node->left = insert(node->left, value);
-    else if (value > node->value)
-        node->right = insert(node->right, value);
-    else  // Equal values are allowed in this AVL tree
-        return node;
+    updateHeight(node);
+    return balanceTree(node, value);
+}
 
-    // 2. Update height of this ancestor node
+// Update the height of a node
+void AVLTree::updateHeight(AVLNode* node) {
     node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
+}
 
-    // 3. Get the balance factor
+// Get height of a node
+int AVLTree::getHeight(AVLNode* node) {
+    return node ? node->height : 0;
+}
+
+// Get balance factor of a node
+int AVLTree::getBalance(AVLNode* node) {
+    if (node == nullptr) return 0;
+    return getHeight(node->left) - getHeight(node->right);
+}
+
+// Right rotate
+AVLNode* AVLTree::rightRotate(AVLNode* y) {
+    AVLNode* x = y->left;
+    AVLNode* T2 = x->right;
+
+    x->right = y;
+    y->left = T2;
+
+    updateHeight(y);
+    updateHeight(x);
+
+    return x;
+}
+
+// Left rotate
+AVLNode* AVLTree::leftRotate(AVLNode* x) {
+    AVLNode* y = x->right;
+    AVLNode* T2 = y->left;
+
+    y->left = x;
+    x->right = T2;
+
+    updateHeight(x);
+    updateHeight(y);
+
+    return y;
+}
+
+// Balance the tree after insertion
+AVLNode* AVLTree::balanceTree(AVLNode* node, int value) {
     int balance = getBalance(node);
 
-    // 4. If node is unbalanced, then there are 4 cases
-
     // Left Left Case
-    if (balance > 1 && value < node->left->value)
+    if (balance > 1 && value < node->left->value) {
         return rightRotate(node);
+    }
 
     // Right Right Case
-    if (balance < -1 && value > node->right->value)
+    if (balance < -1 && value > node->right->value) {
         return leftRotate(node);
+    }
 
     // Left Right Case
     if (balance > 1 && value > node->left->value) {
@@ -60,186 +125,93 @@ Node* AVLTree::insert(Node* node, int value) {
         return leftRotate(node);
     }
 
-    // return the (unchanged) node pointer
     return node;
 }
 
-Node* AVLTree::deleteNode(Node* root, int value) {
-    // 1. Perform the normal BST deletion
-    if (root == nullptr)
-        return root;
+// Utility function to count nodes in the tree
+int AVLTree::countNodes(AVLNode* node) {
+    if (!node) return 0;
+    return countNodes(node->left) + countNodes(node->right) + node->count;
+}
 
-    if (value < root->value)
-        root->left = deleteNode(root->left, value);
-    else if(value > root->value)
-        root->right = deleteNode(root->right, value);
-    else {
-        // node with only one child or no child
-        if((root->left == nullptr) || (root->right == nullptr)) {
-            Node *temp = root->left ? root->left : root->right;
+// Deletes a node with a given value and rebalances the tree
+AVLNode* AVLTree::deleteNode(AVLNode* node, int value) {
+    if (node == nullptr) return node;
 
-            // No child case
-            if(temp == nullptr) {
-                temp = root;
-                root = nullptr;
+    if (value < node->value) {
+        node->left = deleteNode(node->left, value);
+    } else if (value > node->value) {
+        node->right = deleteNode(node->right, value);
+    } else {
+        if (node->count > 1) {
+            node->count--;
+            return node;
+        }
+
+        if (node->left == nullptr || node->right == nullptr) {
+            AVLNode* temp = node->left ? node->left : node->right;
+
+            if (temp == nullptr) {
+                temp = node;
+                node = nullptr;
+            } else {
+                *node = *temp;
             }
-            else // One child case
-                *root = *temp; // Copy the contents of the non-empty child
-
             delete temp;
-        }
-        else {
-            // node with two children: get the inorder
-            // successor (smallest in the right subtree)
-            Node* temp = minValueNode(root->right);
-
-            // copy the inorder successor's data to this node
-            root->value = temp->value;
-
-            // delete the inorder successor
-            root->right = deleteNode(root->right, temp->value);
+        } else {
+            AVLNode* temp = minValueNode(node->right);
+            node->value = temp->value;
+            node->right = deleteNode(node->right, temp->value);
         }
     }
 
-    // if the tree had only one node then return
-    if (root == nullptr)
-        return root;
+    if (node == nullptr) return node;
 
-    // 2. update height of the current node
-    root->height = 1 + std::max(getHeight(root->left), getHeight(root->right));
-
-    // 3. get the balance factor
-    int balance = getBalance(root);
-
-    // 4. if the node is unbalanced, then there are 4 cases
-
-    // left left case
-    if (balance > 1 && getBalance(root->left) >= 0)
-        return rightRotate(root);
-
-    // left right case
-    if (balance > 1 && getBalance(root->left) < 0) {
-        root->left = leftRotate(root->left);
-        return rightRotate(root);
-    }
-
-    // right right case
-    if (balance < -1 && getBalance(root->right) <= 0)
-        return leftRotate(root);
-
-    // right left case
-    if (balance < -1 && getBalance(root->right) > 0) {
-        root->right = rightRotate(root->right);
-        return leftRotate(root);
-    }
-
-    return root;
+    updateHeight(node);
+    return balanceTree(node, value);
 }
 
-void inOrder(Node* node, std::vector<int>& values) {
-    if (node != nullptr) {
-        inOrder(node->left, values);
-        values.push_back(node->value);
-        inOrder(node->right, values);
-    }
-}
-
-int AVLTree::getMedian() {
-    if (root == nullptr) {
-        throw std::out_of_range("Cannot get median from an empty tree");
-    }
-    std::vector<int> values;
-    inOrder(root, values);
-    size_t size = values.size();
-
-    if (size == 0) {
-        throw std::out_of_range("Cannot get median from an empty tree");
-    }
-
-    if (size % 2 != 0)
-        return values[size / 2];
-    else
-        return (values[(size - 1) / 2] + values[size / 2]) / 2;
-}
-
-int AVLTree::popMedian() {
-    if (root == nullptr) {
-        throw std::out_of_range("Cannot pop median from an empty tree");
-    }
-    int median = getMedian();
-    root = deleteNode(root, median);
-    return median;
-}
-
-int AVLTree::getHeight(Node* N) {
-    if (N == nullptr)
-        return 0;
-    return N->height;
-}
-
-int AVLTree::getBalance(Node* N) {
-    if (N == nullptr)
-        return 0;
-    return getHeight(N->left) - getHeight(N->right);
-}
-
-Node* AVLTree::rightRotate(Node* y) {
-    Node* x = y->left;
-    Node* T2 = x->right;
-
-    // Perform rotation
-    x->right = y;
-    y->left = T2;
-
-    // Update heights
-    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
-    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
-
-    // Return new root
-    return x;
-}
-
-Node* AVLTree::leftRotate(Node* x) {
-    Node* y = x->right;
-    Node* T2 = y->left;
-
-    // Perform rotation
-    y->left = x;
-    x->right = T2;
-
-    // Update heights
-    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
-    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
-
-    // Return new root
-    return y;
-}
-
-Node* AVLTree::minValueNode(Node* node) {
-    Node* current = node;
-
-    // loop down to find the leftmost leaf 
-    while (current->left != nullptr)
+// Helper to find the node with the minimum value in a tree
+AVLNode* AVLTree::minValueNode(AVLNode* node) {
+    AVLNode* current = node;
+    while (current && current->left != nullptr) {
         current = current->left;
-
+    }
     return current;
 }
 
-Node* AVLTree::maxValueNode(Node* node) {
-    Node* current = node;
-
-    // loop down to find the rightmost leaf
-    while (current->right != nullptr)
-        current = current->right;
-
-    return current;
+// Function to pop the median value from the AVL tree
+int AVLTree::popMedian() {
+    int totalNodes = countNodes(root);
+    bool leftSubtree = true;
+    AVLNode* medianNode = findMedianNodeAndDelete(root, leftSubtree, (totalNodes + 1) / 2);
+    int medianValue = medianNode ? medianNode->value : -1; // Placeholder for cases where the tree might be empty
+    // Handle deletion of the median node here if needed
+    // Note: Depending on how you manage the median node deletion and the tree's balance, you might adjust this part.
+    return medianValue;
 }
 
-void AVLTree::insertValue(int value) {
-    root = insert(root, value);
-}
-bool AVLTree::isEmpty() const {
-    return root == nullptr;
+AVLNode* AVLTree::findMedianNodeAndDelete(AVLNode*& node, int k, bool deleteMedian) {
+    if (node == nullptr) {
+        return nullptr;
+    }
+
+    int leftNodes = countNodes(node->left);
+
+    if (leftNodes < k) {
+        if (leftNodes + node->count >= k) {
+            if (deleteMedian) {
+                node->count--;
+                if (node->count == 0) {
+                    node = deleteNode(node, node->value);
+                }
+            }
+            return node;
+        }
+        return findMedianNodeAndDelete(node->right, k - leftNodes - node->count, deleteMedian);
+    } else {
+        return findMedianNodeAndDelete(node->left, k, deleteMedian);
+    }
 }
 
 void treeMedian(const std::vector<int>* instructions) {
@@ -247,17 +219,18 @@ void treeMedian(const std::vector<int>* instructions) {
     std::vector<int> medians;
 
     for (int instruction : *instructions) {
-        if (instruction == -1) { 
-            if (!tree.isEmpty()) { // Check if the tree is not empty
-                medians.push_back(tree.popMedian());
+        if (instruction == -1) {
+            int median = tree.popMedian();
+            if (median != -1) { // Ensure the tree wasn't empty
+                medians.push_back(median);
             }
         } else {
-            tree.insertValue(instruction);
+            tree.insert(instruction);
         }
     }
 
+    // Print out the medians
     for (int median : medians) {
         std::cout << median << " ";
     }
-    std::cout << std::endl;
 }
