@@ -14,84 +14,31 @@ myAVLtree.cpp
 #include <stdexcept>
 #include <cmath>
 
-AVLTree::AVLTree() : root(nullptr) {}
-
-AVLTree::~AVLTree() {
-    clearTree(this->root);
-}
-
-void AVLTree::clearTree(AVLNode* node) {
-    if (node) {
-        clearTree(node->left);
-        clearTree(node->right);
-        delete node;
-    }
-}
-
-int AVLTree::height(AVLNode* N) {
-    if (N == nullptr)
-        return 0;
-    return N->height;
-}
-
-int AVLTree::getBalance(AVLNode* N) {
-    if (N == nullptr)
-        return 0;
-    return height(N->left) - height(N->right);
-}
-
-AVLNode* AVLTree::rightRotate(AVLNode* y) {
-    AVLNode* x = y->left;
-    AVLNode* T2 = x->right;
-
-    // Perform rotation
-    x->right = y;
-    y->left = T2;
-
-    // Update heights
-    y->height = std::max(height(y->left), height(y->right)) + 1;
-    x->height = std::max(height(x->left), height(x->right)) + 1;
-
-    // Return new root
-    return x;
-}
-
-AVLNode* AVLTree::leftRotate(AVLNode* x) {
-    AVLNode* y = x->right;
-    AVLNode* T2 = y->left;
-
-    // Perform rotation
-    y->left = x;
-    x->right = T2;
-
-    // Update heights
-    x->height = std::max(height(x->left), height(x->right)) + 1;
-    y->height = std::max(height(y->left), height(y->right)) + 1;
-
-    // Return new root
-    return y;
-}
-
-AVLNode* AVLTree::insertRecursive(AVLNode* node, int value) {
-    if (node == nullptr)
-        return(new AVLNode(value));
-
-    if (value < node->value)
-        node->left = insertRecursive(node->left, value);
-    else if (value > node->value)
-        node->right = insertRecursive(node->right, value);
-    else { // Equal values are handled as duplicates
-        node->count++;
+Node* AVLTree::insert(Node* node, int value) {
+    // 1. Perform the normal BST insertion
+    if (node == nullptr) {
+        node = new Node();
+        node->value = value;
+        node->left = nullptr;
+        node->right = nullptr;
+        node->height = 1;  // new node is initially added at leaf
         return node;
     }
 
-    // Update height of this ancestor node
-    node->height = 1 + std::max(height(node->left), height(node->right));
+    if (value < node->value)
+        node->left = insert(node->left, value);
+    else if (value > node->value)
+        node->right = insert(node->right, value);
+    else  // Equal values are allowed in this AVL tree
+        return node;
 
-    // Get the balance factor
+    // 2. Update height of this ancestor node
+    node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
+
+    // 3. Get the balance factor
     int balance = getBalance(node);
 
-    // If this node becomes unbalanced, then there are 4 cases
+    // 4. If node is unbalanced, then there are 4 cases
 
     // Left Left Case
     if (balance > 1 && value < node->left->value)
@@ -117,80 +64,70 @@ AVLNode* AVLTree::insertRecursive(AVLNode* node, int value) {
     return node;
 }
 
-void AVLTree::insert(int value) {
-    this->root = insertRecursive(this->root, value);
-}
-
-// This function to find and delete the node with a given value will be used for popMedian
-AVLNode* AVLTree::deleteNode(AVLNode* root, int key) {
-    // Base case
+Node* AVLTree::deleteNode(Node* root, int value) {
+    // 1. Perform the normal BST deletion
     if (root == nullptr)
         return root;
 
-    // Recursive calls for ancestors of
-    // node to be deleted
-    if ( key < root->value )
-        root->left = deleteNode(root->left, key);
-    else if( key > root->value )
-        root->right = deleteNode(root->right, key);
+    if (value < root->value)
+        root->left = deleteNode(root->left, value);
+    else if(value > root->value)
+        root->right = deleteNode(root->right, value);
     else {
         // node with only one child or no child
-        if( (root->left == nullptr) || (root->right == nullptr) ) {
-            AVLNode *temp = root->left ? root->left : root->right;
+        if((root->left == nullptr) || (root->right == nullptr)) {
+            Node *temp = root->left ? root->left : root->right;
 
             // No child case
-            if (temp == nullptr) {
+            if(temp == nullptr) {
                 temp = root;
                 root = nullptr;
-            } else // One child case
-                *root = *temp; // Copy the contents of
-                               // the non-empty child
-            delete temp;
-        } else {
-            // node with two children: Get the inorder
-            // successor (smallest in the right subtree)
-            AVLNode* temp = root->right;
-            while (temp->left != nullptr)
-                temp = temp->left;
+            }
+            else // One child case
+                *root = *temp; // Copy the contents of the non-empty child
 
-            // Copy the inorder successor's
-            // data to this node
+            delete temp;
+        }
+        else {
+            // node with two children: get the inorder
+            // successor (smallest in the right subtree)
+            Node* temp = minValueNode(root->right);
+
+            // copy the inorder successor's data to this node
             root->value = temp->value;
 
-            // Delete the inorder successor
+            // delete the inorder successor
             root->right = deleteNode(root->right, temp->value);
         }
     }
 
-    // If the tree had only one node then return
+    // if the tree had only one node then return
     if (root == nullptr)
-      return root;
+        return root;
 
-    // STEP 2: UPDATE HEIGHT OF THE CURRENT NODE
-    root->height = 1 + std::max(height(root->left),
-                                height(root->right));
+    // 2. update height of the current node
+    root->height = 1 + std::max(getHeight(root->left), getHeight(root->right));
 
-    // STEP 3: GET THE BALANCE FACTOR OF THIS NODE (to
-    // check whether this node became unbalanced)
+    // 3. get the balance factor
     int balance = getBalance(root);
 
-    // If this node becomes unbalanced, then there are 4 cases
+    // 4. if the node is unbalanced, then there are 4 cases
 
-    // Left Left Case
+    // left left case
     if (balance > 1 && getBalance(root->left) >= 0)
         return rightRotate(root);
 
-    // Left Right Case
+    // left right case
     if (balance > 1 && getBalance(root->left) < 0) {
         root->left = leftRotate(root->left);
         return rightRotate(root);
     }
 
-    // Right Right Case
+    // right right case
     if (balance < -1 && getBalance(root->right) <= 0)
         return leftRotate(root);
 
-    // Right Left Case
+    // right left case
     if (balance < -1 && getBalance(root->right) > 0) {
         root->right = rightRotate(root->right);
         return leftRotate(root);
@@ -199,194 +136,113 @@ AVLNode* AVLTree::deleteNode(AVLNode* root, int key) {
     return root;
 }
 
-int AVLTree::getMedianValueAndRebalance() {
-    if (root == nullptr) {
-        throw std::runtime_error("The tree is empty. Cannot get median.");
-    }
-
-    // Find the median node
-    AVLNode* medianNode = findMedianNode(root);
-
-    // Get the median value before removing the node
-    int medianValue = medianNode->value;
-
-    // Remove the median node from the tree
-    root = removeNode(root, medianValue);
-
-    return medianValue;
-}
-
-
-//function we are testing for
-void AVLTree::treeMedian(const std::vector<int>* instructions) {
-    if (instructions == nullptr) {
-        std::cerr << "Error: Null pointer to instructions vector." << std::endl;
-        return;
-    }
-
-    AVLTree avl; // Instantiate your AVL tree
-    std::vector<int> medians; // To store and later print all popped medians
-
-    try {
-        for (int inst : *instructions) {
-            if (inst == -1) {
-                // Pop median instruction
-                int median = avl.popMedian(); // Assuming this method exists and returns the median
-                medians.push_back(median);
-            } else {
-                // Insert instruction
-                avl.insert(inst); // Assuming this method exists to insert values
-            }
-        }
-
-        // Output all medians after processing instructions
-        for (int median : medians) {
-            std::cout << median << " ";
-        }
-        std::cout << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Error occurred: " << e.what() << std::endl;
+void inOrder(Node* node, std::vector<int>& values) {
+    if (node != nullptr) {
+        inOrder(node->left, values);
+        values.push_back(node->value);
+        inOrder(node->right, values);
     }
 }
 
+int AVLTree::getMedian() {
+    std::vector<int> values;
+    inOrder(root, values);
+    size_t size = values.size();
 
-
-// util function to update the height and size of a node
-void AVLTree::updateNode(AVLNode* node) {
-    if (node == nullptr) {
-        return;
-    }
-
-    node->height = 1 + std::max(height(node->left), height(node->right));
-    node->count = 1 + (node->left ? node->left->count : 0) + (node->right ? node->right->count : 0);
+    if (size % 2 != 0)
+        return values[size / 2];
+    else
+        return (values[(size - 1) / 2] + values[size / 2]) / 2;
 }
 
-// util function to find the inorder successor of a node
-AVLNode* AVLTree::findSuccessor(AVLNode* node) {
-    AVLNode* current = node;
-    while (current->left != nullptr) {
+int AVLTree::popMedian() {
+    int median = getMedian();
+    root = deleteNode(root, median);
+    return median;
+}
+
+int AVLTree::getHeight(Node* N) {
+    if (N == nullptr)
+        return 0;
+    return N->height;
+}
+
+int AVLTree::getBalance(Node* N) {
+    if (N == nullptr)
+        return 0;
+    return getHeight(N->left) - getHeight(N->right);
+}
+
+Node* AVLTree::rightRotate(Node* y) {
+    Node* x = y->left;
+    Node* T2 = x->right;
+
+    // Perform rotation
+    x->right = y;
+    y->left = T2;
+
+    // Update heights
+    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
+    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
+
+    // Return new root
+    return x;
+}
+
+Node* AVLTree::leftRotate(Node* x) {
+    Node* y = x->right;
+    Node* T2 = y->left;
+
+    // Perform rotation
+    y->left = x;
+    x->right = T2;
+
+    // Update heights
+    x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
+    y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
+
+    // Return new root
+    return y;
+}
+
+Node* AVLTree::minValueNode(Node* node) {
+    Node* current = node;
+
+    // loop down to find the leftmost leaf 
+    while (current->left != nullptr)
         current = current->left;
-    }
+
     return current;
 }
 
-// util function to balance a node
-AVLNode* AVLTree::balanceNode(AVLNode* node) {
-    if (node == nullptr) {
-        return nullptr;
-    }
+Node* AVLTree::maxValueNode(Node* node) {
+    Node* current = node;
 
-    int balance = height(node->left) - height(node->right);
+    // loop down to find the rightmost leaf
+    while (current->right != nullptr)
+        current = current->right;
 
-    // Left heavy
-    if (balance > 1) {
-        // Left-Left case
-        if (height(node->left->left) >= height(node->left->right)) {
-            return rightRotate(node);
-        }
-        // Left-Right case
-        else {
-            node->left = leftRotate(node->left);
-            return rightRotate(node);
-        }
-    }
-    // Right heavy
-    else if (balance < -1) {
-        // Right-Right case
-        if (height(node->right->right) >= height(node->right->left)) {
-            return leftRotate(node);
-        }
-        // Right-Left case
-        else {
-            node->right = rightRotate(node->right);
-            return leftRotate(node);
-        }
-    }
-
-    // Node is already balanced
-    return node;
+    return current;
 }
 
-AVLNode* AVLTree::removeNode(AVLNode* node, int value) {
-    if (node == nullptr) {
-        return nullptr;
-    }
+void AVLTree::insertValue(int value) {
+    root = insert(root, value);
+}
 
-    if (value < node->value) {
-        node->left = removeNode(node->left, value);
-    } else if (value > node->value) {
-        node->right = removeNode(node->right, value);
-    } else {
-        // Node to be removed found
+void treeMedian(const std::vector<int>* instructions) {
+    AVLTree tree;
+    std::vector<int> medians;
 
-        if (node->left == nullptr || node->right == nullptr) {
-            AVLNode* temp = (node->left != nullptr) ? node->left : node->right;
-
-            // No child case
-            if (temp == nullptr) {
-                temp = node;
-                node = nullptr;
-            } else {
-                *node = *temp; // Copy the contents of the non-empty child
-            }
-
-            delete temp;
+    for (int instruction : *instructions) {
+        if (instruction == -1) {
+            medians.push_back(tree.popMedian());
         } else {
-            // Node has two children
-            AVLNode* successor = findSuccessor(node->right);
-            node->value = successor->value;
-            node->right = removeNode(node->right, successor->value);
+            tree.insertValue(instruction);
         }
     }
 
-    // Update height and size
-    updateNode(node);
-
-    // Balance the tree
-    return balanceNode(node);
-}
-
-
-int AVLTree::popMedian() {
-    if (root == nullptr) {
-        throw std::runtime_error("The tree is empty. Cannot pop median.");
+    for (int median : medians) {
+        std::cout << median << " ";
     }
-
-    // Find the median node
-    AVLNode* medianNode = findMedianNode(root);
-
-    // Get the median value before removing the node
-    int medianValue = medianNode->value;
-
-    // Remove the median node from the tree
-    root = removeNode(root, medianValue);
-
-    return medianValue;
-}
-
-AVLNode* AVLTree::findMedianNode(AVLNode* node) {
-    if (node == nullptr) {
-        throw std::runtime_error("The tree is empty. Cannot find median node.");
-    }
-
-    int leftSize = (node->left != nullptr) ? node->left->count : 0;
-    int rightSize = (node->right != nullptr) ? node->right->count : 0;
-    int totalSize = leftSize + rightSize + 1; // Size of the subtree rooted at 'node' including itself
-
-    int medianIndex = totalSize / 2; // Index of the median node (zero-based)
-
-    // If the left subtree size is equal to the median index, the current node is the median
-    if (leftSize == medianIndex) {
-        return node;
-    }
-    // If the left subtree size is greater than the median index, recurse into the left subtree
-    else if (leftSize > medianIndex) {
-        return findMedianNode(node->left);
-    }
-    // If the left subtree size is less than the median index, recurse into the right subtree
-    else {
-        // Adjust the median index for the right subtree
-        medianIndex -= (leftSize + 1);
-        return findMedianNode(node->right);
-    }
+    std::cout << std::endl;
 }
