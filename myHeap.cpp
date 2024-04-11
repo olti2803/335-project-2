@@ -13,6 +13,8 @@ myHeap.cpp
 #include <string>
 #include <vector>
 #include <queue>
+#include <chrono>
+
 
 // Utility function to rebalance heaps
 void rebalance(std::priority_queue<int> &maxHeap, std::priority_queue<int, std::vector<int>, std::greater<int>> &minHeap) { //rebalance the heaps
@@ -47,10 +49,12 @@ int popMedian(std::priority_queue<int> &maxHeap, std::priority_queue<int, std::v
     return median;//return median
 }
 
-void heapMedian(const std::vector<int>* instructions) {//find median of heap
+void heapMedian(const std::vector<int>* instructions) {
     std::priority_queue<int> maxHeap; // Max heap for elements <= median
     std::priority_queue<int, std::vector<int>, std::greater<int>> minHeap; // Min heap for elements > median
     std::vector<int> medians; // Vector to store the medians that are popped
+
+    auto start = std::chrono::high_resolution_clock::now(); // Start the timer
 
     for (int instruction : *instructions) {
         if (instruction == -1) {
@@ -65,9 +69,16 @@ void heapMedian(const std::vector<int>* instructions) {//find median of heap
         }
     }
 
+    auto end = std::chrono::high_resolution_clock::now(); // Stop the timer
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+
     // Print out all medians at once to minimize I/O operations
     for (int median : medians) {
-        std::cout << median << " ";//print median
+        std::cout << median << " ";
     }
-    std::cout << std::endl;//print newline
+    std::cout << std::endl;
+
+    // Output the duration at the end or to a file
+    std::cout << "Time for heapMedian: " << duration << " microseconds" << std::endl;
 }
+

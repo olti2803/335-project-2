@@ -11,6 +11,8 @@ myVector.cpp
 #include <fstream>
 #include <algorithm>
 #include <string>
+#include <chrono>
+
 
 // Function to insert an element into a sorted vector in a position that keeps the vector sorted
 void insertSorted(std::vector<int> &vec, int value) {

@@ -13,6 +13,8 @@ myList.cpp
 #include <list>
 #include <iostream>
 #include <iterator> 
+#include <chrono>
+
 
 // Function to insert an element into a sorted list in a position that keeps the list sorted
 void insertSorted(std::list<int> &lst, int value) {
