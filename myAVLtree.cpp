@@ -14,10 +14,16 @@ myAVLtree.cpp
 #include <stdexcept>
 #include <cmath>
 #include <exception>
-#include "myAVLtree.hpp"
-#include <iostream>
+
 
 using namespace std;
+
+AVLTree::AVLTree() : root(nullptr) {}
+
+AVLTree::~AVLTree() {
+    clear(root);
+}
+
 
 void AVLTree::updateHeightAndSize(AVLNode* t) {
     t->height = 1 + max(height(t->left), height(t->right));
