@@ -8,43 +8,38 @@ myAVLtree.hpp
 #ifndef MYAVLTREE_HPP
 #define MYAVLTREE_HPP
 
+#include <algorithm>
+#include <chrono>
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <algorithm>
 #include <string>
-#include <stdexcept>
-#include <cmath>
-#include <exception>
+#include <vector>
+#include <queue>
 
-struct Node 
-{
-    int val, height;
-    Node *left, *right;
-    Node(int val);  // Constructor declaration
+struct AVLnode {
+    int element;
+    AVLnode *right;
+    AVLnode *left;
+    int height;
+
+    AVLnode(const int &ele, AVLnode *lt, AVLnode *rt, int h = 0) : 
+        element(ele), left(lt), right(rt), height(h) {}
+
+    AVLnode(int &&ele, AVLnode *lt, AVLnode *rt, int h = 0) : 
+        element(std::move(ele)), left(lt), right(rt), height(h) {}
 };
 
-class AVLtree {
-public:
-    AVLtree();  // Constructor
-    int getSize();  // Get the number of nodes
-    int getMax();  // Get the maximum value
-    void insert(int num);  // Insert a value
-    int popMinimum();  // Remove and return the smallest value
-    int popMaximum();  // Remove and return the largest value
-    Node* insertNode(Node* node, int val);  // Helper for insert
-    Node* deleteNode(Node* node, int val);  // Delete a node
-
-private:
-    Node* root;
-    int node_count;
-    int getHeight(Node* node);
-    int balance_factor(Node* node);
-    Node* minimumNode(Node* node);
-    Node* leftRotate(Node* k1);
-    Node* rightRotate(Node* k2);
-};
-
+int height(AVLnode *t);
+void insert(const int &x, AVLnode *&t);
+void balance(AVLnode *&t);
+void rotateWithLeftChild(AVLnode *&k2);
+void rotateWithRightChild(AVLnode *&k1);
+void doubleWithLeftChild(AVLnode *&k3);
+void doubleWithRightChild(AVLnode *&k1);
+void remove(const int &x, AVLnode *&t);
+AVLnode *findMaximum(AVLnode *t);
+AVLnode *findMinimum(AVLnode *t);
 void treeMedian(const std::vector<int> *instructions);
 
-#endif 
+#endif

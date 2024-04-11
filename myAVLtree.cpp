@@ -5,186 +5,187 @@ DUE 04/10/24
 myAVLtree.cpp
 */
 
-#include "myAVLtree.hpp"
+#include <algorithm>
+#include <chrono>
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <algorithm>
 #include <string>
-#include <stdexcept>
-#include <cmath>
-#include <exception>
+#include <vector>
+#include <queue>
+#include "myAVLtree.hpp"
 
-using namespace std;
 
-// Node constructor
-Node::Node(int val) : val(val), height(1), left(nullptr), right(nullptr) {}
-
-// AVLtree constructor
-AVLtree::AVLtree() : root(nullptr), node_count(0) {}
-
-// Get the size of the AVL tree
-int AVLtree::getSize() {
-    return node_count;
+int height(AVLnode *t) { //returns height of node t
+    return t == nullptr ? -1 : t->height;
 }
 
-// Get the maximum value in the AVL tree
-int AVLtree::getMax() {
-    if (!root) throw std::runtime_error("AVL tree is empty.");
-    Node* current = root;
-    while (current->right) {
-        current = current->right;
-    }
-    return current->val;
-}
-
-// Insert a value into the AVL tree
-void AVLtree::insert(int num) {
-    root = insertNode(root, num);
-    node_count++;
-}
-
-// Remove and return the smallest value in the AVL tree
-int AVLtree::popMinimum() {
-    if (!root) throw std::runtime_error("AVL tree is empty.");
-    int minValue = minimumNode(root)->val;
-    root = deleteNode(root, minValue);
-    node_count--;
-    return minValue;
-}
-
-// Remove and return the largest value in the AVL tree
-int AVLtree::popMaximum() {
-    if (!root) throw std::runtime_error("AVL tree is empty.");
-    int maxValue = getMax(); // Utilizes getMax() for the value
-    root = deleteNode(root, maxValue);
-    node_count--;
-    return maxValue;
-}
-
-// Helper functions defined below...
-
-Node* AVLtree::insertNode(Node* node, int val) {
-    if (!node) return new Node(val);
-
-    if (val < node->val) node->left = insertNode(node->left, val);
-    else if (val > node->val) node->right = insertNode(node->right, val);
-    else return node; // Duplicate values are not inserted
-
-    node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
-    int balance = balance_factor(node);
-
-    // Rotations
-    if (balance > 1 && val < node->left->val) return rightRotate(node);
-    if (balance < -1 && val > node->right->val) return leftRotate(node);
-    if (balance > 1 && val > node->left->val) {
-        node->left = leftRotate(node->left);
-        return rightRotate(node);
-    }
-    if (balance < -1 && val < node->right->val) {
-        node->right = rightRotate(node->right);
-        return leftRotate(node);
+void insert(const int &x, AVLnode *&t) { //inserts x into AVL tree t
+    if (t == nullptr) {
+        t = new AVLnode(x, nullptr, nullptr); //create new node with x
+    } else if (x <= t->element) {
+        insert(x, t->left);
+    } else if (t->element < x) {
+        insert(x, t->right);
     }
 
-    return node;
+    balance(t); //balance the tree
 }
 
-Node* AVLtree::deleteNode(Node* node, int val) {
-    if (!node) return node;
+static const int ALLOWED_IMBALANCE = 1; //allowed imbalance for AVL tree
 
-    // Find the node to be deleted and perform deletion
-    if (val < node->val) node->left = deleteNode(node->left, val);
-    else if (val > node->val) node->right = deleteNode(node->right, val);
-    else {
-        // Node with only one child or no child
-        if (!node->left || !node->right) {
-            Node* temp = node->left ? node->left : node->right;
-            if (!temp) {
-                temp = node;
-                node = nullptr;
-            } else *node = *temp;
-            delete temp;
+//Assume t is balanced or within one of being balanced
+void balance(AVLnode *&t){ //balance the AVL tree
+    if (t == nullptr) {
+        return;
+    }
+
+    if (height(t->left) - height(t->right) > ALLOWED_IMBALANCE) { //left subtree is taller
+        if (height(t->left->left) >= height(t->left->right)) {// left child of left subtree is taller
+            rotateWithLeftChild(t);
         } else {
-            // Node with two children
-            Node* temp = minimumNode(node->right);
-            node->val = temp->val;
-            node->right = deleteNode(node->right, temp->val);
+            doubleWithLeftChild(t);
+        }
+    } else if (height(t->right) - height(t->left) > ALLOWED_IMBALANCE) { //right subtree is taller
+        if (height(t->right->right) >= height(t->right->left)) { //right child of right subtree is taller
+            rotateWithRightChild(t);
+        } else {
+            doubleWithRightChild(t);
         }
     }
 
-    if (!node) return node;
-
-    // Update height and rebalance
-    node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
-    int balance = balance_factor(node);
-
-    // Rotations
-    if (balance > 1 && balance_factor(node->left) >= 0) return rightRotate(node);
-    if (balance > 1 && balance_factor(node->left) < 0) {
-        node->left = leftRotate(node->left);
-        return rightRotate(node);
-    }
-    if (balance < -1 && balance_factor(node->right) <= 0) return leftRotate(node);
-    if (balance < -1 && balance_factor(node->right) > 0) {
-        node->right = rightRotate(node->right);
-        return leftRotate(node);
-    }
-
-    return node;
+    t->height = std::max(height(t->left), height(t->right)) + 1;  //update height of t
 }
 
-int AVLtree::getHeight(Node* node) {
-    return node ? node->height : 0;
-}
-
-int AVLtree::balance_factor(Node* node) {
-    if (!node) return 0;
-    return getHeight(node->left) - getHeight(node->right);
-}
-
-Node* AVLtree::minimumNode(Node* node) {
-    Node* current = node;
-    while (current && current->left) current = current->left;
-    return current;
-}
-
-Node* AVLtree::leftRotate(Node* k1) {
-    Node* k2 = k1->right;
-    Node* T2 = k2->left;
-
-    k2->left = k1;
-    k1->right = T2;
-
-    k1->height = 1 + std::max(getHeight(k1->left), getHeight(k1->right));
-    k2->height = 1 + std::max(getHeight(k2->left), getHeight(k2->right));
-
-    return k2;
-}
-
-Node* AVLtree::rightRotate(Node* k2) {
-    Node* k1 = k2->left;
-    Node* T2 = k1->right;
-
+void rotateWithLeftChild(AVLnode *&k2){ //rotate with left child
+    AVLnode *k1 = k2->left;
+    k2->left = k1->right;
     k1->right = k2;
-    k2->left = T2;
-
-    k2->height = 1 + std::max(getHeight(k2->left), getHeight(k2->right));
-    k1->height = 1 + std::max(getHeight(k1->left), getHeight(k1->right));
-
-    return k1;
+    k2->height = std::max(height(k2->left), height(k2->right)) + 1;
+    k1->height = std::max(height(k1->left), k2->height) + 1;
+    k2 = k1;
 }
 
-void treeMedian(const std::vector<int>* instructions) {
-    AVLtree tree;
-    for (int instruction : *instructions) {
-        if (instruction != -1) {
-            tree.insert(instruction);
+void rotateWithRightChild(AVLnode *&k2){ //rotate with right child
+    AVLnode *k1 = k2->right;
+    k2->right = k1->left;
+    k1->left = k2;
+    k2->height = std::max(height(k2->right), height(k2->left)) + 1;
+    k1->height = std::max(height(k1->right), k2->height) + 1;
+    k2 = k1;
+}
+
+void doubleWithLeftChild(AVLnode *&k3){ //double rotate with left child
+    rotateWithRightChild(k3->left);
+    rotateWithLeftChild(k3);
+}
+
+void doubleWithRightChild(AVLnode *&k3) { //double rotate with right child
+    rotateWithLeftChild(k3->right); 
+    rotateWithRightChild(k3); 
+}
+
+void remove(const int &x, AVLnode *&t){ //remove x from AVL tree t
+    if (t == nullptr) {
+        return;
+    }
+
+    if (x < t->element) { //x is in left subtree
+        remove(x, t->left);
+    } else if (t->element < x) { //x is in right subtree
+        remove(x, t->right); 
+    } else if (t->left != nullptr && t->right != nullptr) { //node has two children
+        t->element = findMinimum(t->right)->element;
+        remove(t->element, t->right);
+    } else { //node has one child
+        AVLnode *oldNode = t; 
+        t = (t->left != nullptr) ? t->left : t->right; 
+        delete oldNode;
+        oldNode = nullptr;
+    }
+
+    balance(t);
+}
+
+AVLnode *findMinimum(AVLnode *t){ //find minimum element in AVL tree t
+    if (t == nullptr){ //empty tree
+        return nullptr;
+    }
+    if(t->left == nullptr){ //no left child
+        return t;
+    }
+    return findMinimum(t->left); 
+}
+
+AVLnode *findMaximum(AVLnode *t){ //find maximum element in AVL tree t
+    if (t != nullptr) {
+        while(t->right != nullptr) { //keep going right until no right child
+            t = t->right;
+        }
+    }
+    return t;
+}
+
+void treeMedian(const std::vector<int> *instructions){ //find median of AVL tree
+    std::vector<int> medians; //empty vector that will hold median values
+    AVLnode *max = nullptr;
+    AVLnode *min = nullptr; 
+    int countmax = 0;
+    int countmin = 0;
+
+    const auto time_begin = std::chrono::steady_clock::now(); //begin timer to measure for report
+    for (auto it = instructions->begin(); it != instructions->end(); ++it){
+        if (max == nullptr && *it != -1) {
+            insert(*it, max);
+            countmax += 1; 
+        } else if (*it == -1) {
+            AVLnode *rightMost = findMaximum(max); //find rightmost node
+            medians.push_back(rightMost->element);  //add rightmost node to medians
+            remove(rightMost->element, max);
+            countmax -= 1; 
+            if (countmin > countmax) { //if min is greater than max
+                AVLnode *leftMost = findMinimum(min); //find leftmost node
+                auto copy = leftMost->element; 
+                remove(copy, min);
+                insert(copy, max);
+                countmin -= 1;
+                countmax += 1;
+            }
         } else {
-            if (tree.getSize() % 2 == 0) {
-                std::cout << "Even number of nodes, operation not supported in this demo." << std::endl;
-            } else {
-                std::cout << "Median: " << tree.popMaximum() << std::endl;
+            if (*it <= findMaximum(max)->element) { //if element is less than or equal to max
+                insert(*it, max);
+                countmax += 1;
+                if (countmax > countmin + 1) { //if max is greater than min by more than 1
+                    AVLnode *rightMost = findMaximum(max);
+                    int copyy = rightMost->element;
+                    remove(copyy, max);
+                    insert(copyy, min); 
+                    countmax -= 1;
+                    countmin += 1; 
+                }
+            } else if (*it > findMaximum(max)->element) { //if element is greater than max
+                insert(*it, min);
+                countmin += 1; 
+                if (countmin > countmax){ //if min is greater than max
+                    AVLnode *leftMost = findMinimum(min);
+                    auto coppyyy = leftMost->element;
+                    remove(coppyyy, min);
+                    insert(coppyyy, max);
+                    countmin -= 1;
+                    countmax += 1;
+                }
             }
         }
     }
+
+    //TIMING IS COMMENTED OUT
+
+    // const auto time_end = std::chrono::steady_clock::now();
+    // int duration_ = std::chrono::duration<double, std::micro>(time_end - time_begin).count();
+
+    // std::cout << "\n\nTime to insert and pop medians for AVLtree: " << duration_ << " microseconds\n" << std::endl;
+
+    // for (auto m: medians){
+    //     //std::cout << m << " ";
+    // }
 }
