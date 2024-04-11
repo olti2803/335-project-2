@@ -6,54 +6,45 @@ main.cpp
 */
 
 #include <iostream>
-#include <fstream>
-#include <algorithm>
 #include <vector>
-#include <string>
+#include <fstream>
+#include <sstream>
+#include <list>
 #include "myVector.hpp"
 #include "myList.hpp"
 #include "myHeap.hpp"
 #include "myAVLtree.hpp"
 
-// declarations of median functions
-void vectorMedian(const std::vector<int>* instructions);
-void listMedian(const std::vector<int>* instructions);
-void heapMedian(const std::vector<int>* instructions);
-void treeMedian(const std::vector<int>* instructions);
+int main() {
+    std::vector<int> myVec;
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <inputfile>" << std::endl;
-        return 1;
-    }
+    std::string filename = "input3.txt";
+    std::ifstream temp (filename);
 
-    std::string inputFileName = argv[1];
-    std::ifstream inputFile(inputFileName);
-
-    if (!inputFile.is_open()) {
-        std::cerr << "Could not open file: " << inputFileName << std::endl;
-        return 1;
-    }
-
-    std::vector<int> instructions;
     std::string line;
+    std::string num;
 
-    while (getline(inputFile, line)) {
-        if (line.substr(0, 6) == "insert") {
-            int value = std::stoi(line.substr(7));
-            instructions.push_back(value);
-        } else if (line == "pop median") {
-            instructions.push_back(-1);
+    std::string newline;
+    std::string num1;
+
+    int realnum;
+
+    while(std::getline(temp, line)) { //read file line by line
+        std::stringstream temp2(line); //parse line
+        std::getline(temp2, num, ' '); 
+
+        std::getline(temp2, num1, ' ');  
+
+        if(num == "insert") { //if insert, add to vector
+            realnum = stoi(num1);
+            myVec.push_back(realnum);
+        } else { 
+            myVec.push_back(-1);
         }
     }
-
-    inputFile.close();
-
-    // Pass instructions to each median method
-    vectorMedian(&instructions);
-    listMedian(&instructions);
-    heapMedian(&instructions);
-    treeMedian(&instructions);
-
-    return 0;
+    
+    vectorMedian(&myVec);
+    listMedian(&myVec);
+    heapMedian(&myVec);
+    treeMedian(&myVec);
 }
