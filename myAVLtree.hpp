@@ -27,7 +27,7 @@ class AVLTree
         // ALL IMPLEMENTATIONS ARE FROM THE TEXTBOOK 
         //link: https://users.cs.fiu.edu/~weiss/dsaa_c++4/code/AvlTree.h 
         //given from ed
-        
+
     struct AvlNode
     {
         int element;
@@ -306,50 +306,6 @@ class AVLTree
         return root == nullptr;
     }
 
-
-    //     AvlNode* findKthLargest(AvlNode* root, int k) const {
-    //     if (root == nullptr || k <= 0 || k > root->size) {
-    //         return nullptr; // Invalid input or k out of range
-    //     }
-
-    //     int rightSize = getSize(root->right);
-    //     if (k == rightSize + 1) {
-    //         return root; // Current node is the kth largest
-    //     } else if (k <= rightSize) {
-    //         // The kth largest element is in the right subtree
-    //         return findKthLargest(root->right, k);
-    //     } else {
-    //         // The kth largest element is in the left subtree
-    //         return findKthLargest(root->left, k - rightSize - 1);
-    //     }
-    // }
-
-//     int findMedian() const {
-//     if (root == nullptr) {
-//         std::cerr << "Tree is empty. Cannot find median." << std::endl;
-//         return -1; // or any other appropriate default value
-//     }
-
-//     int totalSize = root->size;
-//     int middle = totalSize / 2 + 1;
-
-//     AvlNode* current = root;
-//     while (current != nullptr) {
-//         int leftSize = (current->left != nullptr) ? current->left->size : 0;
-
-//         if (leftSize + 1 == middle) {
-//             return current->element;
-//         } else if (leftSize >= middle) {
-//             current = current->left;
-//         } else {
-//             middle -= leftSize + 1;
-//             current = current->right;
-//         }
-//     }
-
-//     return -1; // or any other appropriate default value
-// }
-
 int findMedian() const {
     if (root == nullptr) {
         std::cerr << "Tree is empty. Cannot find median." << std::endl;
@@ -363,18 +319,17 @@ int findMedian() const {
     while (current != nullptr) {
         int leftSize = (current->left != nullptr) ? current->left->size : 0;
 
-        if (leftSize + 1 == middle) {
+        if (leftSize + current->count >= middle) {
             return current->element;
-        } else if (leftSize >= middle) {
-            current = current->left;
         } else {
-            middle -= leftSize + 1;
+            middle -= leftSize + current->count;
             current = current->right;
         }
     }
 
     return -1; // or any other appropriate default value
 }
+
 
 };
 
