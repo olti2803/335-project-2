@@ -34,6 +34,8 @@ void vectorMedian(const std::vector<int>* instructions) {
     std::vector<int> vec; // Vector to store the numbers in sorted order
     std::vector<int> medians; // Vector to store the medians that are popped
 
+    auto start = std::chrono::high_resolution_clock::now(); // Start the timer
+
     for (int instruction : *instructions) {
         if (instruction == -1) {
             // Pop median operation
@@ -47,9 +49,15 @@ void vectorMedian(const std::vector<int>* instructions) {
         }
     }
 
+    auto end = std::chrono::high_resolution_clock::now(); // Stop the timer
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+
     // Print out all medians at once to minimize I/O operations
     for (int median : medians) {
         std::cout << median << " ";
     }
     std::cout << std::endl;
+
+    // Output the duration
+    std::cout << "Time for vectorMedian: " << duration << " microseconds" << std::endl;
 }
