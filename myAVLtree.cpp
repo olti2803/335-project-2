@@ -179,13 +179,14 @@ void treeMedian(const std::vector<int> *instructions){ //find median of AVL tree
     }
 
     //TIMING
-
-    // const auto time_end = std::chrono::steady_clock::now();
-    // int duration_ = std::chrono::duration<double, std::micro>(time_end - time_begin).count();
-
-    // std::cout << "\n\nTime to insert and pop medians for AVLtree: " << duration_ << " microseconds\n" << std::endl;
+    const auto time_end = std::chrono::steady_clock::now();
+    int duration_ = std::chrono::duration<double, std::micro>(time_end - time_begin).count();//duration of AVL tree operations
 
     for (auto m: medians){ //print medians
         std::cout << m << " ";//prints
     }
+    std::cout << std::endl;
+
+    std::cout << "\nTime to insert and pop medians for AVLtree: " << duration_ << " microseconds\n" << std::endl; //timing result
+
 }
