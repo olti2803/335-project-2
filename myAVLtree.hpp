@@ -19,273 +19,363 @@ myAVLtree.hpp
 
 using namespace std;
 
-class UnderflowException : public std::exception {
-public:
-    const char* what() const noexcept override {
-        return "Underflow Exception";
-    }
-};
+void treeMedian (const std::vector<int> * instructions);
 
-template <typename Comparable>
-class AvlTree {
-public:
-    AvlTree() : root(nullptr) { }
-    
-    AvlTree(const AvlTree & rhs) : root(nullptr) {
-        root = clone(rhs.root);
-    }
-
-    AvlTree(AvlTree && rhs) : root(rhs.root) {
-        rhs.root = nullptr;
-    }
-    
-    ~AvlTree() {
-        makeEmpty();
-    }
-
-    AvlTree & operator=(const AvlTree & rhs) {
-        AvlTree copy = rhs;
-        std::swap(*this, copy);
-        return *this;
-    }
-
-    AvlTree & operator=(AvlTree && rhs) {
-        std::swap(root, rhs.root);
-        return *this;
-    }
-
-    const Comparable & findMin() const {
-        if(isEmpty())
-            throw UnderflowException();
-        return findMin(root)->element;
-    }
-
-    const Comparable & findMax() const {
-        if(isEmpty())
-            throw UnderflowException();
-        return findMax(root)->element;
-    }
-
-    bool contains(const Comparable & x) const {
-        return contains(x, root);
-    }
-
-    bool isEmpty() const {
-        return root == nullptr;
-    }
-
-    void printTree() const {
-        if(isEmpty())
-            cout << "Empty tree" << endl;
-        else
-            printTree(root);
-    }
-
-    void makeEmpty() {
-        makeEmpty(root);
-    }
-
-    void insert(const Comparable & x) {
-        insert(x, root);
-    }
-
-    void insert(Comparable && x) {
-        insert(std::move(x), root);
-    }
-
-    void remove(const Comparable & x) {
-        remove(x, root);
-    }
-
-    Comparable popMedian() {
-        if(isEmpty())
-            throw UnderflowException();
-
-        Comparable median = findMedian(root, (root->size + 1) / 2);
-        remove(median);
-        return median;
-    }
-
-private:
-    struct AvlNode {
-        Comparable element;
+class AVLTree
+{
+    public:
+        // ALL IMPLEMENTATIONS ARE FROM THE TEXTBOOK 
+        //link: https://users.cs.fiu.edu/~weiss/dsaa_c++4/code/AvlTree.h 
+        //given from ed
+        
+    struct AvlNode
+    {
+        int element;
         AvlNode *left;
         AvlNode *right;
         int height;
-        int size;  // size of the subtree rooted at this node
-
-        AvlNode(const Comparable & ele, AvlNode *lt, AvlNode *rt, int h = 0, int sz = 1)
-          : element(ele), left(lt), right(rt), height(h), size(sz) { }
+        int size;
+        int count;
+        AvlNode( const int & ele, AvlNode *lt, AvlNode *rt, int h = 0 ): element{ ele }, left{ lt }, right{ rt }, height{ h } { }
+        AvlNode( int && ele, AvlNode *lt, AvlNode *rt, int h = 0 ): element{ std::move( ele ) }, left{ lt }, right{ rt }, height{ h } { }
     };
+    
+    AvlNode * root = nullptr;
 
-    AvlNode *root;
-
-    void insert(const Comparable & x, AvlNode * & t) {
-        if(t == nullptr)
-            t = new AvlNode(x, nullptr, nullptr);
-        else if(x < t->element)
-            insert(x, t->left);
-        else if(t->element < x)
-            insert(x, t->right);
-
-        balance(t);
-        t->size = 1 + size(t->left) + size(t->right);
+    AvlNode* getRoot() const {
+        return root;
+    }
+ 
+    /**
+    * Return the height of node t or -1 if nullptr. 3 */
+    int height( AvlNode *t ) const
+    {
+        return t == nullptr ? -1 : t->height;
     }
 
-    void insert(Comparable && x, AvlNode * & t) {
+    /**
+    * Internal method to insert into a subtree.
+    * x is the item to insert.
+    * t is the node that roots the subtree.
+    * Set the new root of the subtree.
+    */
+    void insert( const int & x, AvlNode * & t )
+    {
         if(t == nullptr)
-            t = new AvlNode(std::move(x), nullptr, nullptr);
-        else if(x < t->element)
-            insert(std::move(x), t->left);
-        else if(t->element < x)
-            insert(std::move(x), t->right);
+        {
+            t = new AvlNode{ x, nullptr, nullptr };
+        }
+        else if( x < t->element )
+        {
+            insert( x, t->left );
+        }
+        else if( t->element < x )
+        {
+            insert( x, t->right );
+        }
+        else if(x == t -> element)
+        {
+            (t -> count)++;
+        }
 
-        balance(t);
-        t->size = 1 + size(t->left) + size(t->right);
-    }
-
-    void remove(const Comparable & x, AvlNode * & t) {
-        if(t == nullptr)
-            return;   // Item not found; do nothing
-        
-        if(x < t->element)
-            remove(x, t->left);
-        else if(t->element < x)
-            remove(x, t->right);
-        else if(t->left != nullptr && t->right != nullptr) { // Two children
-            t->element = findMin(t->right)->element;
-            remove(t->element, t->right);
-        }
-        else {
-            AvlNode *oldNode = t;
-            t = (t->left != nullptr) ? t->left : t->right;
-            delete oldNode;
-        }
-        
-        if(t != nullptr) {
-            balance(t);
-            t->size = 1 + size(t->left) + size(t->right);
-        }
+        t -> size = 1 + getSize(t->left) + getSize(t->right);
+        balance( t );
     }
 
     static const int ALLOWED_IMBALANCE = 1;
 
-    void balance(AvlNode * & t) {
+    // Assume t is balanced or within one of being balanced
+    void balance( AvlNode * & t )
+    {
         if(t == nullptr)
+        {
             return;
+        }
         
-        if(height(t->left) - height(t->right) > ALLOWED_IMBALANCE)
-            if(height(t->left->left) >= height(t->left->right))
-                rotateWithLeftChild(t);
+        if(height( t->left ) - height( t->right ) > ALLOWED_IMBALANCE)
+        {
+            if(height( t->left->left ) >= height( t->left->right ))
+            {
+                rotateWithLeftChild( t );
+            }
             else
-                doubleWithLeftChild(t);
-        else if(height(t->right) - height(t->left) > ALLOWED_IMBALANCE)
-            if(height(t->right->right) >= height(t->right->left))
-                rotateWithRightChild(t);
-            else
-                doubleWithRightChild(t);
+            {
+                doubleWithLeftChild( t );
+            }
+            
+        }
+        else 
+        {
+            if(height( t->right ) - height( t->left ) > ALLOWED_IMBALANCE)
+            {
+                if( height( t->right->right ) >= height( t->right->left ))
+                {
+                    rotateWithRightChild(t);
+                }
+                else
+                {
+                    doubleWithRightChild( t );
+                }
+            }
+        }
                 
-        t->height = max(height(t->left), height(t->right)) + 1;
+        t->height = std::max( height( t->left ), height( t->right ) ) + 1;
+        //t -> size = 1 + getSize(t->left) + getSize(t->right);
+
     }
 
-    AvlNode * findMin(AvlNode *t) const {
-        if(t == nullptr)
-            return nullptr;
-        if(t->left == nullptr)
-            return t;
-        return findMin(t->left);
-    }
-
-    AvlNode * findMax(AvlNode *t) const {
-        if(t != nullptr)
-            while(t->right != nullptr)
-                t = t->right;
-        return t;
-    }
-
-    bool contains(const Comparable & x, AvlNode *t) const {
-        if(t == nullptr)
-            return false;
-        else if(x < t->element)
-            return contains(x, t->left);
-        else if(t->element < x)
-            return contains(x, t->right);
-        else
-            return true;    // Match
-    }
-
-    void makeEmpty(AvlNode * & t) {
-        if(t != nullptr) {
-            makeEmpty(t->left);
-            makeEmpty(t->right);
-            delete t;
-        }
-        t = nullptr;
-    }
-
-    void printTree(AvlNode *t) const {
-        if(t != nullptr) {
-            printTree(t->left);
-            cout << t->element << endl;
-            printTree(t->right);
-        }
-    }
-
-    AvlNode * clone(AvlNode *t) const {
-        if(t == nullptr)
-            return nullptr;
-        else
-            return new AvlNode(t->element, clone(t->left), clone(t->right), t->height);
-    }
-
-    int height(AvlNode *t) const {
-        return t == nullptr ? -1 : t->height;
-    }
-
-    int max(int lhs, int rhs) const {
-        return lhs > rhs ? lhs : rhs;
-    }
-
-    void rotateWithLeftChild(AvlNode * & k2) {
+    /**
+     * Rotate binary tree node with left child.
+     * For AVL trees, this is a single rotation for case 1.
+     * Update heights, then set new root.
+     */
+    void rotateWithLeftChild( AvlNode * & k2 )
+    {
         AvlNode *k1 = k2->left;
         k2->left = k1->right;
         k1->right = k2;
-        k2->height = max(height(k2->left), height(k2->right)) + 1;
-        k1->height = max(height(k1->left), k2->height) + 1;
-        k2 = k1;
+        k2->height = std::max( height( k2->left ), height( k2->right ) ) + 1;
+        k1->height = std::max( height( k1->left ), k2->height ) + 1;
+        k2=k1;
     }
 
-    void rotateWithRightChild(AvlNode * & k1) {
+    /**
+        * Rotate binary tree node with right child.
+        * For AVL trees, this is a single rotation for case 4.
+        * Update heights, then set new root.
+    */
+    void rotateWithRightChild( AvlNode * & k1 )
+    {
         AvlNode *k2 = k1->right;
         k1->right = k2->left;
         k2->left = k1;
-        k1->height = max(height(k1->left), height(k1->right)) + 1;
-        k2->height = max(height(k2->right), k1->height) + 1;
+        k1->height = std::max( height( k1->left ), height( k1->right ) ) + 1;
+        k2->height = std::max( height( k2->right ), k1->height ) + 1;
         k1 = k2;
     }
 
-    void doubleWithLeftChild(AvlNode * & k3) {
-        rotateWithRightChild(k3->left);
-        rotateWithLeftChild(k3);
+    /**
+    * Double rotate binary tree node: first left child
+    * with its right child; then node k3 with new left child.
+    * For AVL trees, this is a double rotation for case 2.
+    * Update heights, then set new root.
+    */
+    void doubleWithLeftChild( AvlNode * & k3 )
+    {
+        rotateWithRightChild( k3->left );
+        rotateWithLeftChild( k3 );
     }
 
-    void doubleWithRightChild(AvlNode * & k1) {
-        rotateWithLeftChild(k1->right);
-        rotateWithRightChild(k1);
+    /**
+        * Double rotate binary tree node: first right child.
+        * with its left child; then node k1 with new right child.
+        * For AVL trees, this is a double rotation for case 3.
+        * Update heights, then set new root.
+        */
+    void doubleWithRightChild( AvlNode * & k1 )
+    {
+        rotateWithLeftChild( k1->right );
+        rotateWithRightChild( k1 );
     }
 
-    Comparable findMedian(AvlNode *t, int k) const {
-        int leftSize = size(t->left);
-        if (k <= leftSize)
-            return findMedian(t->left, k);
-        else if (k > leftSize + 1)
-            return findMedian(t->right, k - leftSize - 1);
-        return t->element;
+    /**
+    * Internal method to remove from a subtree.
+    * x is the item to remove.
+    * t is the node that roots the subtree.
+    * Set the new root of the subtree.
+    */
+    // void remove( const int & x, AvlNode * & t )
+    // {
+    //     if(t == nullptr )
+    //     {
+    //         return;   // Item not found; do nothing
+    //     }
+
+    //     if(x < t -> element)
+    //     {
+    //         remove(x, t -> left);
+    //     }
+    //     else if(t -> element < x)
+    //     {
+    //         remove(x, t -> right);
+    //     }
+    //     else if(t -> count > 1)
+    //     {
+    //         (t -> count)--;
+    //         return;
+    //     }
+    //     else if( t->left != nullptr && t->right != nullptr ) // Two children
+    //     {
+    //         t->element = findMin( t->right )->element;
+    //         remove( t->element, t->right );
+    //     }
+    //     else
+    //     {
+    //         AvlNode *oldNode = t;
+    //         t = ( t->left != nullptr ) ? t->left : t->right;
+    //         delete oldNode;
+    //     }
+
+    //     if(t != nullptr)
+    //     {
+    //         t -> size = 1 + getSize(t->left) + getSize(t->right);
+    //     }
+
+    //     balance(t);
+    // }
+    void remove(const int & x, AvlNode *& t) {
+    if (t == nullptr) {
+        return; // Item not found; do nothing
     }
 
-    int size(AvlNode *t) const {
-        return t == nullptr ? 0 : t->size;
+    if (x < t->element) {
+        remove(x, t->left);
+    } else if (t->element < x) {
+        remove(x, t->right);
+    } else if (t->count > 1) {
+        (t->count)--;
+        return;
+    } else if (t->left != nullptr && t->right != nullptr) // Two children
+    {
+        t->element = findMin(t->right)->element;
+        remove(t->element, t->right); // Remove the successor
+    } else {
+        AvlNode *oldNode = t;
+        t = (t->left != nullptr) ? t->left : t->right;
+        delete oldNode;
     }
+
+    if (t != nullptr) {
+        t->size = 1 + getSize(t->left) + getSize(t->right);
+    }
+
+    balance(t);
+}
+
+
+    /**
+     * * Internal method to find the smallest item in a subtree t.
+    * Return node containing the smallest item.
+    */
+    AvlNode * findMin( AvlNode *t ) const
+    {
+        if( t == nullptr )
+        {
+            return nullptr;
+        }
+        if( t->left == nullptr )
+        {
+            return t;
+        }  
+        return findMin( t->left );
+    }
+
+    /**
+        * Internal method to find the largest item in a subtree t.
+        * Return node containing the largest item.
+        */
+    AvlNode * findMax( AvlNode *t ) const
+    {
+        if( t != nullptr )
+        {
+            while( t->right != nullptr )
+            {
+                t = t->right;
+            }
+        }
+        return t;
+    }
+
+    void preOrder(AvlNode * t)
+    {
+        if (t != nullptr) 
+        {
+            std::cout << t->element << "("<< t -> count << ")"<< " ";
+            preOrder(t->left);
+            preOrder(t->right);
+        }
+    }
+
+    int getSize(AvlNode * t) const 
+    {
+    return t == nullptr ? 0 : t->size;
+    }
+
+    bool empty() const
+    {
+        return root == nullptr;
+    }
+
+
+    //     AvlNode* findKthLargest(AvlNode* root, int k) const {
+    //     if (root == nullptr || k <= 0 || k > root->size) {
+    //         return nullptr; // Invalid input or k out of range
+    //     }
+
+    //     int rightSize = getSize(root->right);
+    //     if (k == rightSize + 1) {
+    //         return root; // Current node is the kth largest
+    //     } else if (k <= rightSize) {
+    //         // The kth largest element is in the right subtree
+    //         return findKthLargest(root->right, k);
+    //     } else {
+    //         // The kth largest element is in the left subtree
+    //         return findKthLargest(root->left, k - rightSize - 1);
+    //     }
+    // }
+
+//     int findMedian() const {
+//     if (root == nullptr) {
+//         std::cerr << "Tree is empty. Cannot find median." << std::endl;
+//         return -1; // or any other appropriate default value
+//     }
+
+//     int totalSize = root->size;
+//     int middle = totalSize / 2 + 1;
+
+//     AvlNode* current = root;
+//     while (current != nullptr) {
+//         int leftSize = (current->left != nullptr) ? current->left->size : 0;
+
+//         if (leftSize + 1 == middle) {
+//             return current->element;
+//         } else if (leftSize >= middle) {
+//             current = current->left;
+//         } else {
+//             middle -= leftSize + 1;
+//             current = current->right;
+//         }
+//     }
+
+//     return -1; // or any other appropriate default value
+// }
+
+int findMedian() const {
+    if (root == nullptr) {
+        std::cerr << "Tree is empty. Cannot find median." << std::endl;
+        return -1; // or any other appropriate default value
+    }
+
+    int totalSize = root->size;
+    int middle = totalSize / 2 + 1;
+
+    AvlNode* current = root;
+    while (current != nullptr) {
+        int leftSize = (current->left != nullptr) ? current->left->size : 0;
+
+        if (leftSize + 1 == middle) {
+            return current->element;
+        } else if (leftSize >= middle) {
+            current = current->left;
+        } else {
+            middle -= leftSize + 1;
+            current = current->right;
+        }
+    }
+
+    return -1; // or any other appropriate default value
+}
+
 };
 
-#endif 
+#endif
