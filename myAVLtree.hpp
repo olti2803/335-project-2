@@ -313,7 +313,7 @@ int findMedian() const {
     }
 
     int totalSize = root->size;
-    int middle = totalSize / 2 + 1;
+    int middle = totalSize / 2;
 
     AvlNode* current = root;
     while (current != nullptr) {
