@@ -15,7 +15,6 @@ myAVLtree.cpp
 #include <cmath>
 #include <exception>
 
-
 using namespace std;
 
 AVLTree::AVLTree() : root(nullptr) {}

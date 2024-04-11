@@ -29,6 +29,14 @@ public:
     int findMin() const;
     void treeMedian(const std::vector<int>* instructions);
 
+    void insert(int value) {
+        insert(value, root);
+    }
+
+    void remove(int value) {
+        remove(value, root);
+    }
+
 private:
     struct AVLNode {
         int data;
