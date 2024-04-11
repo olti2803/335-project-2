@@ -42,4 +42,4 @@ AVLnode *findMaximum(AVLnode *t);
 AVLnode *findMinimum(AVLnode *t);
 void treeMedian(const std::vector<int> *instructions);
 
-#endif
+#endif // MYAVLTREE_HPP
