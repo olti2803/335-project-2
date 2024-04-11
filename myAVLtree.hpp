@@ -17,51 +17,34 @@ myAVLtree.hpp
 #include <cmath>
 #include <exception>
 
-class AVLTree {
-public:
-    AVLTree();
-    ~AVLTree();
-    void insert(int value);
-    void remove(int value);
-    bool isEmpty() const;
-    int size() const;
-    int findMax() const;
-    int findMin() const;
-    void treeMedian(const std::vector<int>* instructions);
-
-    void insert(int value) {
-        insert(value, root);
-    }
-
-    void remove(int value) {
-        remove(value, root);
-    }
-
-private:
-    struct AVLNode {
-        int data;
-        AVLNode* left;
-        AVLNode* right;
-        int height;
-        int size;  // Total nodes in subtree
-        AVLNode(int d, AVLNode* l = nullptr, AVLNode* r = nullptr, int h = 0, int s = 1)
-            : data(d), left(l), right(r), height(h), size(s) {}
-    };
-    AVLNode* root;
-
-    void insert(int value, AVLNode*& t);
-    void remove(int value, AVLNode*& t);
-    void balance(AVLNode*& t);
-    int height(AVLNode* t) const;
-    int getSize(AVLNode* t) const;
-    void updateHeightAndSize(AVLNode* t);
-    AVLNode* findMin(AVLNode* t) const;
-    AVLNode* findMax(AVLNode* t) const;
-    void clear(AVLNode*& t);
-    void rotateWithLeftChild(AVLNode*& k2);
-    void rotateWithRightChild(AVLNode*& k1);
-    void doubleWithLeftChild(AVLNode*& k3);
-    void doubleWithRightChild(AVLNode*& k1);
+struct Node 
+{
+    int val, height;
+    Node *left, *right;
+    Node(int val);  // Constructor declaration
 };
 
-#endif // MYAVLTREE_HPP
+class AVLtree {
+public:
+    AVLtree();  // Constructor
+    int getSize();  // Get the number of nodes
+    int getMax();  // Get the maximum value
+    void insert(int num);  // Insert a value
+    int popMinimum();  // Remove and return the smallest value
+    int popMaximum();  // Remove and return the largest value
+    Node* insertNode(Node* node, int val);  // Helper for insert
+    Node* deleteNode(Node* node, int val);  // Delete a node
+
+private:
+    Node* root;
+    int node_count;
+    int getHeight(Node* node);
+    int balance_factor(Node* node);
+    Node* minimumNode(Node* node);
+    Node* leftRotate(Node* k1);
+    Node* rightRotate(Node* k2);
+};
+
+void treeMedian(const std::vector<int> *instructions);
+
+#endif 

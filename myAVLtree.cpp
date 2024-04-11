@@ -17,148 +17,174 @@ myAVLtree.cpp
 
 using namespace std;
 
-AVLTree::AVLTree() : root(nullptr) {}
+// Node constructor
+Node::Node(int val) : val(val), height(1), left(nullptr), right(nullptr) {}
 
-AVLTree::~AVLTree() {
-    clear(root);
+// AVLtree constructor
+AVLtree::AVLtree() : root(nullptr), node_count(0) {}
+
+// Get the size of the AVL tree
+int AVLtree::getSize() {
+    return node_count;
 }
 
-
-void AVLTree::updateHeightAndSize(AVLNode* t) {
-    t->height = 1 + max(height(t->left), height(t->right));
-    t->size = 1 + getSize(t->left) + getSize(t->right);
-}
-
-AVLTree::AVLNode* AVLTree::findMin(AVLNode* t) const {
-    return t->left == nullptr ? t : findMin(t->left);
-}
-
-AVLTree::AVLNode* AVLTree::findMax(AVLNode* t) const {
-    return t->right == nullptr ? t : findMax(t->right);
-}
-
-int AVLTree::findMax() const {
-    if (isEmpty()) throw std::runtime_error("Tree is empty");
-    return findMax(root)->data;
-}
-
-int AVLTree::findMin() const {
-    if (isEmpty()) throw std::runtime_error("Tree is empty");
-    return findMin(root)->data;
-}
-
-void AVLTree::rotateWithLeftChild(AVLNode*& k2) {
-    AVLNode* k1 = k2->left;
-    k2->left = k1->right;
-    k1->right = k2;
-    updateHeightAndSize(k2);
-    updateHeightAndSize(k1);
-    k2 = k1;
-}
-
-void AVLTree::rotateWithRightChild(AVLNode*& k1) {
-    AVLNode* k2 = k1->right;
-    k1->right = k2->left;
-    k2->left = k1;
-    updateHeightAndSize(k1);
-    updateHeightAndSize(k2);
-    k1 = k2;
-}
-
-void AVLTree::doubleWithLeftChild(AVLNode*& k3) {
-    rotateWithRightChild(k3->left);
-    rotateWithLeftChild(k3);
-}
-
-void AVLTree::doubleWithRightChild(AVLNode*& k1) {
-    rotateWithLeftChild(k1->right);
-    rotateWithRightChild(k1);
-}
-
-void AVLTree::clear(AVLNode*& t) {
-    if (t != nullptr) {
-        clear(t->left);
-        clear(t->right);
-        delete t;
-        t = nullptr;
+// Get the maximum value in the AVL tree
+int AVLtree::getMax() {
+    if (!root) throw std::runtime_error("AVL tree is empty.");
+    Node* current = root;
+    while (current->right) {
+        current = current->right;
     }
+    return current->val;
 }
 
-void AVLTree::balance(AVLNode*& t) {
-    if (t == nullptr) return;
-    if (height(t->left) - height(t->right) > 1) {
-        if (height(t->left->left) >= height(t->left->right)) rotateWithLeftChild(t);
-        else doubleWithLeftChild(t);
-    } else if (height(t->right) - height(t->left) > 1) {
-        if (height(t->right->right) >= height(t->right->left)) rotateWithRightChild(t);
-        else doubleWithRightChild(t);
+// Insert a value into the AVL tree
+void AVLtree::insert(int num) {
+    root = insertNode(root, num);
+    node_count++;
+}
+
+// Remove and return the smallest value in the AVL tree
+int AVLtree::popMinimum() {
+    if (!root) throw std::runtime_error("AVL tree is empty.");
+    int minValue = minimumNode(root)->val;
+    root = deleteNode(root, minValue);
+    node_count--;
+    return minValue;
+}
+
+// Remove and return the largest value in the AVL tree
+int AVLtree::popMaximum() {
+    if (!root) throw std::runtime_error("AVL tree is empty.");
+    int maxValue = getMax(); // Utilizes getMax() for the value
+    root = deleteNode(root, maxValue);
+    node_count--;
+    return maxValue;
+}
+
+// Helper functions defined below...
+
+Node* AVLtree::insertNode(Node* node, int val) {
+    if (!node) return new Node(val);
+
+    if (val < node->val) node->left = insertNode(node->left, val);
+    else if (val > node->val) node->right = insertNode(node->right, val);
+    else return node; // Duplicate values are not inserted
+
+    node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
+    int balance = balance_factor(node);
+
+    // Rotations
+    if (balance > 1 && val < node->left->val) return rightRotate(node);
+    if (balance < -1 && val > node->right->val) return leftRotate(node);
+    if (balance > 1 && val > node->left->val) {
+        node->left = leftRotate(node->left);
+        return rightRotate(node);
     }
-    updateHeightAndSize(t);
-}
-
-void AVLTree::insert(int value, AVLNode*& t) {
-    if (t == nullptr) t = new AVLNode(value);
-    else if (value < t->data) insert(value, t->left);
-    else if (value > t->data) insert(value, t->right);
-    balance(t);
-    updateHeightAndSize(t);
-}
-
-void AVLTree::remove(int value, AVLNode*& t) {
-    if (t == nullptr) return;
-    if (value < t->data) remove(value, t->left);
-    else if (value > t->data) remove(value, t->right);
-    else if (t->left != nullptr && t->right != nullptr) {
-        t->data = findMin(t->right)->data;
-        remove(t->data, t->right);
-    } else {
-        AVLNode* oldNode = t;
-        t = (t->left != nullptr) ? t->left : t->right;
-        delete oldNode;
+    if (balance < -1 && val < node->right->val) {
+        node->right = rightRotate(node->right);
+        return leftRotate(node);
     }
-    if (t != nullptr) balance(t);
-    updateHeightAndSize(t);
+
+    return node;
 }
 
-void AVLTree::treeMedian(const std::vector<int>* instructions) {
-    AVLTree small, large; // Trees to hold the lower and higher halves
-    std::vector<int> medians; // To store the medians for printing later
+Node* AVLtree::deleteNode(Node* node, int val) {
+    if (!node) return node;
 
-    for (int inst : *instructions) {
-        if (inst == -1) {
-            // Pop median operation
-            if (!small.isEmpty()) {
-                int median = small.findMax(); // Extract the current median
-                medians.push_back(median);
-                small.remove(median); // Remove the median from the small tree
-            }
-            // No median to pop if small is empty (implied large is also empty)
+    // Find the node to be deleted and perform deletion
+    if (val < node->val) node->left = deleteNode(node->left, val);
+    else if (val > node->val) node->right = deleteNode(node->right, val);
+    else {
+        // Node with only one child or no child
+        if (!node->left || !node->right) {
+            Node* temp = node->left ? node->left : node->right;
+            if (!temp) {
+                temp = node;
+                node = nullptr;
+            } else *node = *temp;
+            delete temp;
         } else {
-            // Insert operation
-            if (small.isEmpty() || inst < small.findMax()) {
-                small.insert(inst); // Insert into small if it's less than the current median
-            } else {
-                large.insert(inst); // Otherwise, insert into large
-            }
-
-            // Rebalance the trees to ensure their sizes differ by no more than 1
-            if (small.size() > large.size() + 1) {
-                // If small has 2 more elements than large, move the largest from small to large
-                int toMove = small.findMax();
-                small.remove(toMove);
-                large.insert(toMove);
-            } else if (large.size() > small.size()) {
-                // If large has more elements, move the smallest from large to small
-                int toMove = large.findMin();
-                large.remove(toMove);
-                small.insert(toMove);
-            }
+            // Node with two children
+            Node* temp = minimumNode(node->right);
+            node->val = temp->val;
+            node->right = deleteNode(node->right, temp->val);
         }
     }
 
-    // After processing all instructions, print out the medians extracted
-    for (int median : medians) {
-        std::cout << median << " ";
+    if (!node) return node;
+
+    // Update height and rebalance
+    node->height = 1 + std::max(getHeight(node->left), getHeight(node->right));
+    int balance = balance_factor(node);
+
+    // Rotations
+    if (balance > 1 && balance_factor(node->left) >= 0) return rightRotate(node);
+    if (balance > 1 && balance_factor(node->left) < 0) {
+        node->left = leftRotate(node->left);
+        return rightRotate(node);
     }
-    std::cout << std::endl;
+    if (balance < -1 && balance_factor(node->right) <= 0) return leftRotate(node);
+    if (balance < -1 && balance_factor(node->right) > 0) {
+        node->right = rightRotate(node->right);
+        return leftRotate(node);
+    }
+
+    return node;
+}
+
+int AVLtree::getHeight(Node* node) {
+    return node ? node->height : 0;
+}
+
+int AVLtree::balance_factor(Node* node) {
+    if (!node) return 0;
+    return getHeight(node->left) - getHeight(node->right);
+}
+
+Node* AVLtree::minimumNode(Node* node) {
+    Node* current = node;
+    while (current && current->left) current = current->left;
+    return current;
+}
+
+Node* AVLtree::leftRotate(Node* k1) {
+    Node* k2 = k1->right;
+    Node* T2 = k2->left;
+
+    k2->left = k1;
+    k1->right = T2;
+
+    k1->height = 1 + std::max(getHeight(k1->left), getHeight(k1->right));
+    k2->height = 1 + std::max(getHeight(k2->left), getHeight(k2->right));
+
+    return k2;
+}
+
+Node* AVLtree::rightRotate(Node* k2) {
+    Node* k1 = k2->left;
+    Node* T2 = k1->right;
+
+    k1->right = k2;
+    k2->left = T2;
+
+    k2->height = 1 + std::max(getHeight(k2->left), getHeight(k2->right));
+    k1->height = 1 + std::max(getHeight(k1->left), getHeight(k1->right));
+
+    return k1;
+}
+
+void treeMedian(const std::vector<int>* instructions) {
+    AVLtree tree;
+    for (int instruction : *instructions) {
+        if (instruction != -1) {
+            tree.insert(instruction);
+        } else {
+            if (tree.getSize() % 2 == 0) {
+                std::cout << "Even number of nodes, operation not supported in this demo." << std::endl;
+            } else {
+                std::cout << "Median: " << tree.popMaximum() << std::endl;
+            }
+        }
+    }
 }
